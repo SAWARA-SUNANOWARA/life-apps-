@@ -1,0 +1,1704 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>睡眠記録</title>
+  <link rel="icon" href="favicon-32.png" sizes="32x32">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-title" content="睡眠記録">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#eef1fb">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      background: #eef1fb;
+      font-family: "Helvetica Neue", "Yu Gothic", "YuGothic", sans-serif;
+      color: #333;
+    }
+
+    body {
+      min-height: 100vh;
+    }
+
+    .screen {
+      display: none;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 20px 18px 110px;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .back-btn {
+      background: none;
+      border: none;
+      font-size: 1.4rem;
+      color: #6c7ae0;
+      cursor: pointer;
+      padding: 4px 8px;
+      line-height: 1;
+    }
+
+    .top-title {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #444;
+      letter-spacing: 0.05em;
+    }
+
+    /* ホーム画面 */
+    .home-header {
+      text-align: center;
+      margin: 24px 0 36px;
+    }
+
+    .home-header h1 {
+      font-size: 1.4rem;
+      letter-spacing: 0.15em;
+      color: #444;
+      margin-bottom: 6px;
+    }
+
+    .home-header p {
+      font-size: 0.85rem;
+      color: #999;
+    }
+
+    .home-btn {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      width: 100%;
+      padding: 20px;
+      margin-bottom: 16px;
+      border: none;
+      border-radius: 16px;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(70, 80, 150, 0.08);
+      cursor: pointer;
+      text-align: left;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+
+    .home-btn:active {
+      transform: scale(0.98);
+      opacity: 0.9;
+    }
+
+    .home-btn .icon {
+      font-size: 1.8rem;
+    }
+
+    .home-btn .label {
+      font-size: 1.05rem;
+      font-weight: bold;
+      color: #444;
+    }
+
+    .home-btn .sub {
+      font-size: 0.75rem;
+      color: #999;
+      margin-top: 2px;
+    }
+
+    .home-btn.night { background: #6c7ae0; }
+    .home-btn.night .label, .home-btn.night .sub { color: #fff; }
+    .home-btn.night .sub { color: #dfe2fa; }
+
+    .home-btn.morning { background: #ffb35c; }
+    .home-btn.morning .label, .home-btn.morning .sub { color: #fff; }
+    .home-btn.morning .sub { color: #fff3e2; }
+
+    /* フォーム共通 */
+    .date-label {
+      font-size: 0.8rem;
+      color: #999;
+      margin-bottom: 18px;
+    }
+
+    .date-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .date-bar-label {
+      font-size: 0.85rem;
+      color: #888;
+    }
+
+    .date-input {
+      font-size: 1.05rem;
+      font-weight: bold;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #d6d9ef;
+      background: #fff;
+      color: #333;
+    }
+
+    .date-bar-weekday {
+      font-size: 0.95rem;
+      font-weight: bold;
+      color: #6c7ae0;
+    }
+
+    .field {
+      margin-bottom: 22px;
+    }
+
+    .field-label {
+      font-size: 0.85rem;
+      color: #666;
+      margin-bottom: 8px;
+    }
+
+    .seg-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .seg-btn {
+      flex: 1;
+      min-width: 64px;
+      padding: 12px 8px;
+      border-radius: 10px;
+      border: 1px solid #d6d9ef;
+      background: #fff;
+      color: #555;
+      font-size: 0.9rem;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .seg-btn.selected {
+      background: #6c7ae0;
+      border-color: #6c7ae0;
+      color: #fff;
+      font-weight: bold;
+    }
+
+    .rating-row {
+      display: flex;
+      gap: 8px;
+      justify-content: space-between;
+    }
+
+    .rating-btn {
+      flex: 1;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: 1px solid #d6d9ef;
+      background: #fff;
+      color: #555;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .rating-btn.selected {
+      background: #6c7ae0;
+      border-color: #6c7ae0;
+      color: #fff;
+      font-weight: bold;
+    }
+
+    .range-time-value {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #6c7ae0;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .range-time-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      height: 36px;
+      accent-color: #6c7ae0;
+    }
+
+    .range-time-scale {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: #aaa;
+      margin-top: 4px;
+    }
+
+    .stamp-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .stamp-btn {
+      aspect-ratio: 1;
+      border-radius: 12px;
+      border: 1px solid #d6d9ef;
+      background: #fff;
+      color: #666;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+
+    .stamp-btn.selected {
+      background: #b98a4e;
+      border-color: #b98a4e;
+      color: #fff;
+      font-weight: bold;
+    }
+
+    /* 外出時間帯(なぞって範囲選択) */
+    .away-track {
+      display: flex;
+      height: 44px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #d6d9ef;
+      touch-action: none;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .away-seg {
+      flex: 1;
+      background: #fff;
+      border-right: 1px solid #eef1fb;
+    }
+
+    .away-seg:last-child {
+      border-right: none;
+    }
+
+    .away-seg.selected {
+      background: #6c7ae0;
+    }
+
+    input[type="time"] {
+      flex: 1;
+      font-size: 1rem;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #d6d9ef;
+      background: #fff;
+      color: #333;
+    }
+
+    input[type="time"]:disabled {
+      background: #f0f1f8;
+      color: #bbb;
+    }
+
+    .clear-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1px solid #d6d9ef;
+      background: #fff;
+      color: #999;
+      font-size: 1rem;
+      cursor: pointer;
+      flex: 0 0 auto;
+    }
+
+    .save-bar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 14px 18px 22px;
+      background: linear-gradient(to top, #eef1fb 60%, rgba(238,241,251,0));
+    }
+
+    .save-btn {
+      display: block;
+      width: 100%;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 16px;
+      border: none;
+      border-radius: 14px;
+      background: #6c7ae0;
+      color: #fff;
+      font-size: 1.05rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    /* 一覧画面 */
+    .list-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      width: 100%;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      border: none;
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(70, 80, 150, 0.08);
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .list-date {
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: #6c7ae0;
+    }
+
+    .list-summary {
+      font-size: 0.85rem;
+      color: #555;
+    }
+
+    .list-refreshed {
+      font-size: 0.75rem;
+      color: #999;
+    }
+
+    .empty-msg {
+      text-align: center;
+      color: #aaa;
+      font-size: 0.9rem;
+      margin-top: 40px;
+    }
+
+    /* 操作結果を伝える一時的な通知 */
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 32px;
+      transform: translateX(-50%) translateY(10px);
+      background: #444;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      white-space: nowrap;
+      z-index: 10;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* グラフ画面 */
+    .chart-panel {
+      margin-bottom: 30px;
+    }
+
+    .chart-panel-title {
+      font-size: 0.85rem;
+      color: #666;
+      margin-bottom: 8px;
+    }
+
+    .chart-svg-wrap {
+      position: relative;
+    }
+
+    .chart-svg-wrap svg {
+      display: block;
+      width: 100%;
+      height: 90px;
+    }
+
+    .chart-tooltip {
+      position: absolute;
+      transform: translate(-50%, -100%);
+      background: #333;
+      color: #fff;
+      font-size: 0.75rem;
+      padding: 5px 9px;
+      border-radius: 6px;
+      white-space: nowrap;
+      pointer-events: none;
+      display: none;
+      z-index: 5;
+    }
+
+    .chart-axis-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: #aaa;
+      margin-top: 4px;
+    }
+
+    .chart-empty {
+      text-align: center;
+      color: #bbb;
+      font-size: 0.8rem;
+      padding: 24px 0;
+    }
+
+    .chart-legend {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      font-size: 0.72rem;
+      color: #666;
+      margin-top: 8px;
+    }
+
+    .chart-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .chart-legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      display: inline-block;
+      flex: 0 0 auto;
+    }
+
+    /* 詳細画面 */
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #e3e5f5;
+      font-size: 0.9rem;
+    }
+
+    .detail-row .k {
+      color: #999;
+    }
+
+    .detail-row .v {
+      color: #333;
+      font-weight: bold;
+    }
+
+    .delete-btn {
+      display: block;
+      width: 100%;
+      margin-top: 28px;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      background: #fdeeee;
+      color: #d24545;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- ホーム画面 -->
+  <div class="screen active" id="screen-home">
+    <div class="home-header">
+      <h1>睡眠記録</h1>
+      <p>タップだけで記録できます</p>
+    </div>
+
+    <button class="home-btn night" onclick="openNightScreen()">
+      <span class="icon">🌙</span>
+      <span>
+        <div class="label">就寝を記録</div>
+        <div class="sub">寝る前にタップ (約10秒)</div>
+      </span>
+    </button>
+
+    <button class="home-btn morning" onclick="openMorningScreen()">
+      <span class="icon">☀️</span>
+      <span>
+        <div class="label">起床を記録</div>
+        <div class="sub">起きたらタップ (約20秒)</div>
+      </span>
+    </button>
+
+    <button class="home-btn" style="background:#fff;" onclick="openCaffeineScreen()">
+      <span class="icon">☕</span>
+      <span>
+        <div class="label" style="color:#444;">カフェインを記録</div>
+        <div class="sub" style="color:#999;">飲んだ時間帯をタップ (いつでもOK)</div>
+      </span>
+    </button>
+
+    <button class="home-btn" style="background:#fff;" onclick="openListScreen()">
+      <span class="icon">📋</span>
+      <span>
+        <div class="label" style="color:#444;">記録一覧</div>
+        <div class="sub" style="color:#999;">これまでの記録を見る</div>
+      </span>
+    </button>
+
+    <button class="home-btn" style="background:#fff;" onclick="openChartScreen()">
+      <span class="icon">📈</span>
+      <span>
+        <div class="label" style="color:#444;">グラフを見る</div>
+        <div class="sub" style="color:#999;">傾向を振り返る</div>
+      </span>
+    </button>
+  </div>
+
+  <!-- 夜の記録画面 -->
+  <div class="screen" id="screen-night">
+    <div class="top-bar">
+      <button class="back-btn" onclick="showScreen('screen-home')">‹</button>
+      <div class="top-title">就寝の記録</div>
+    </div>
+    <div class="date-bar">
+      <span class="date-bar-label">起床予定日</span>
+      <input type="date" class="date-input" id="night-date-input">
+      <span class="date-bar-weekday" id="night-date-weekday"></span>
+    </div>
+
+    <div id="night-fields"></div>
+
+    <div class="save-bar">
+      <button class="save-btn" onclick="saveNight()">保存する</button>
+    </div>
+  </div>
+
+  <!-- 朝の記録画面 -->
+  <div class="screen" id="screen-morning">
+    <div class="top-bar">
+      <button class="back-btn" onclick="showScreen('screen-home')">‹</button>
+      <div class="top-title">起床の記録</div>
+    </div>
+    <div class="date-bar">
+      <span class="date-bar-label">記録日</span>
+      <input type="date" class="date-input" id="morning-date-input">
+      <span class="date-bar-weekday" id="morning-date-weekday"></span>
+    </div>
+
+    <div id="morning-fields"></div>
+
+    <div class="save-bar">
+      <button class="save-btn" onclick="saveMorning()">保存する</button>
+    </div>
+  </div>
+
+  <!-- カフェイン記録画面 -->
+  <div class="screen" id="screen-caffeine">
+    <div class="top-bar">
+      <button class="back-btn" onclick="showScreen('screen-home')">‹</button>
+      <div class="top-title">カフェイン記録</div>
+    </div>
+    <div class="date-bar">
+      <span class="date-bar-label">記録対象日</span>
+      <input type="date" class="date-input" id="caffeine-date-input">
+      <span class="date-bar-weekday" id="caffeine-date-weekday"></span>
+    </div>
+    <div class="field-label">飲んだ時間帯をタップ(何回でもOK、押すたびに保存)</div>
+    <div class="stamp-grid" id="caffeine-grid"></div>
+  </div>
+
+  <!-- グラフ画面 -->
+  <div class="screen" id="screen-chart">
+    <div class="top-bar">
+      <button class="back-btn" onclick="showScreen('screen-home')">‹</button>
+      <div class="top-title">記録の傾向</div>
+    </div>
+
+    <div class="seg-group" id="chart-range-group" style="margin-bottom: 24px;">
+      <button class="seg-btn" type="button" data-range="7">1週間</button>
+      <button class="seg-btn" type="button" data-range="30">1ヶ月</button>
+      <button class="seg-btn" type="button" data-range="90">3ヶ月</button>
+    </div>
+
+    <div id="chart-panels"></div>
+  </div>
+
+  <!-- 一覧画面 -->
+  <div class="screen" id="screen-list">
+    <div class="top-bar">
+      <button class="back-btn" onclick="showScreen('screen-home')">‹</button>
+      <div class="top-title">記録一覧</div>
+    </div>
+    <div id="list-items"></div>
+  </div>
+
+  <!-- 詳細画面 -->
+  <div class="screen" id="screen-detail">
+    <div class="top-bar">
+      <button class="back-btn" onclick="openListScreen()">‹</button>
+      <div class="top-title" id="detail-date-label"></div>
+    </div>
+    <div id="detail-fields"></div>
+    <button class="delete-btn" onclick="deleteDetailRecord()">この記録を削除</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const STORAGE_KEY = "sleepLogRecords_v1";
+
+    const PLACE_LABELS = { home: "自宅", partner: "彼女の家", other: "その他" };
+    const ALCOHOL_LABELS = { none: "なし", tipsy: "ほろ酔い", drunk: "しっかり酔い", wasted: "酩酊" };
+
+    // ---- 保存データの読み書き ----
+    function loadRecords() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function saveRecords(records) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    }
+
+    // ---- 日付・時刻のユーティリティ ----
+    function pad2(n) {
+      return String(n).padStart(2, "0");
+    }
+
+    function dateKey(d) {
+      return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+    }
+
+    function timeStr(d) {
+      return pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+    }
+
+    const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
+    function weekdayOf(dateKeyStr) {
+      const [y, mo, d] = dateKeyStr.split("-").map(Number);
+      return WEEKDAYS[new Date(y, mo - 1, d).getDay()];
+    }
+
+    // 保存できたことが分かるよう、短時間だけ結果を表示する通知。
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(showToast._timer);
+      showToast._timer = setTimeout(() => toast.classList.remove("show"), 1800);
+    }
+
+    // 就寝時は日付をまたぐため、正午以降にタップした場合は
+    // 「翌日の朝に起きる」とみなして起床日をキーにする。
+    // 正午より前(日付をまたいで既に朝方)にタップした場合は当日をキーにする。
+    function computeNightWakeDateKey(now) {
+      const d = new Date(now);
+      if (d.getHours() >= 12) {
+        d.setDate(d.getDate() + 1);
+      }
+      return dateKey(d);
+    }
+
+    function showScreen(id) {
+      document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
+    }
+
+    // ---- 入力パーツ ----
+    function makeSegField(labelText, options, value, onChange) {
+      const wrap = document.createElement("div");
+      wrap.className = "field";
+      const label = document.createElement("div");
+      label.className = "field-label";
+      label.textContent = labelText;
+      wrap.appendChild(label);
+
+      const group = document.createElement("div");
+      group.className = "seg-group";
+      options.forEach(opt => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "seg-btn" + (value === opt.value ? " selected" : "");
+        btn.textContent = opt.label;
+        btn.onclick = () => onChange(value === opt.value ? null : opt.value);
+        group.appendChild(btn);
+      });
+      wrap.appendChild(group);
+      return wrap;
+    }
+
+    function makeRatingField(labelText, value, onChange) {
+      const wrap = document.createElement("div");
+      wrap.className = "field";
+      const label = document.createElement("div");
+      label.className = "field-label";
+      label.textContent = labelText;
+      wrap.appendChild(label);
+
+      const row = document.createElement("div");
+      row.className = "rating-row";
+      for (let i = 1; i <= 5; i++) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "rating-btn" + (value === i ? " selected" : "");
+        btn.textContent = String(i);
+        btn.onclick = () => onChange(value === i ? null : i);
+        row.appendChild(btn);
+      }
+      wrap.appendChild(row);
+      return wrap;
+    }
+
+    // スライダー(シークバー)による時刻選択。ホイールが苦手なため、
+    // 「朝(5:00〜11:00)」「夜(20:00〜翌4:00)」など想定される範囲に絞って
+    // 短いスライダーで選べるようにする。opts: { startHour, totalSteps, stepMinutes }
+    function timeIndexToStr(startHour, index, stepMinutes) {
+      const totalMinutes = (startHour * 60 + index * stepMinutes + 1440) % 1440;
+      const h = Math.floor(totalMinutes / 60);
+      const m = totalMinutes % 60;
+      return pad2(h) + ":" + pad2(m);
+    }
+
+    function timeStrToIndex(value, startHour, stepMinutes, totalSteps) {
+      const [h, m] = value.split(":").map(Number);
+      let diff = (h * 60 + m) - startHour * 60;
+      diff = ((diff % 1440) + 1440) % 1440;
+      const idx = Math.round(diff / stepMinutes);
+      if (idx < 0 || idx > totalSteps) return null;
+      return idx;
+    }
+
+    // 範囲外の値(例: 想定より早い/遅い時刻)は、最も近い範囲の端に丸める。
+    // スライダーの位置と表示テキストを常に一致させるために使う。
+    function clampTimeStrToRange(value, opts) {
+      const [h, m] = value.split(":").map(Number);
+      let diff = (h * 60 + m) - opts.startHour * 60;
+      diff = ((diff % 1440) + 1440) % 1440;
+      let idx = Math.round(diff / opts.stepMinutes);
+      idx = Math.max(0, Math.min(opts.totalSteps, idx));
+      return { idx, str: timeIndexToStr(opts.startHour, idx, opts.stepMinutes) };
+    }
+
+    function makeRangeTimeField(labelText, value, onChange, opts) {
+      const wrap = document.createElement("div");
+      wrap.className = "field";
+
+      const label = document.createElement("div");
+      label.className = "field-label";
+      label.textContent = labelText;
+      wrap.appendChild(label);
+
+      const valueDisplay = document.createElement("div");
+      valueDisplay.className = "range-time-value";
+      const clamped = value ? clampTimeStrToRange(value, opts) : null;
+      valueDisplay.textContent = clamped ? clamped.str : "未設定(スライドして設定)";
+      wrap.appendChild(valueDisplay);
+
+      const row = document.createElement("div");
+      row.className = "range-time-row";
+
+      const slider = document.createElement("input");
+      slider.type = "range";
+      slider.min = "0";
+      slider.max = String(opts.totalSteps);
+      slider.step = "1";
+      const defaultIndex = Math.floor(opts.totalSteps / 2);
+      slider.value = String(clamped ? clamped.idx : defaultIndex);
+      slider.oninput = () => {
+        const idx = parseInt(slider.value, 10);
+        const t = timeIndexToStr(opts.startHour, idx, opts.stepMinutes);
+        valueDisplay.textContent = t;
+        onChange(t);
+      };
+      row.appendChild(slider);
+
+      const clearBtn = document.createElement("button");
+      clearBtn.type = "button";
+      clearBtn.className = "clear-btn";
+      clearBtn.textContent = "×";
+      clearBtn.setAttribute("aria-label", "クリア");
+      clearBtn.onclick = () => {
+        onChange(null);
+        valueDisplay.textContent = "未設定(スライドして設定)";
+      };
+      row.appendChild(clearBtn);
+
+      wrap.appendChild(row);
+
+      const scale = document.createElement("div");
+      scale.className = "range-time-scale";
+      const startLabel = document.createElement("span");
+      startLabel.textContent = timeIndexToStr(opts.startHour, 0, opts.stepMinutes);
+      const endLabel = document.createElement("span");
+      endLabel.textContent = timeIndexToStr(opts.startHour, opts.totalSteps, opts.stepMinutes);
+      scale.appendChild(startLabel);
+      scale.appendChild(endLabel);
+      wrap.appendChild(scale);
+
+      return wrap;
+    }
+
+    // 時間帯を指でなぞって記録するタイムライン(30分単位)。「外出していた時間」用に
+    // 作ったもので、「中途覚醒していた時間」にも同じ作りを流用する(opts.rowsで
+    // 表示する時間帯を行ごとに指定する。外出=0-12時/12-24時の2段、
+    // 中途覚醒=22-翌10時の1段、など)。
+    // 1段48マスだと目盛が細かすぎて押しにくい & 1回のドラッグでは範囲が1つしか
+    // 作れなかったため、1段を12時間までにして1マスの幅を確保し、
+    // なぞった部分を「そのストロークの塗り方向」で塗る(オセロ的な反転ではなく、
+    // 1本指でなぞった範囲を選択/解除のどちらかに統一)方式にする。
+    // これにより、誤って1マスだけ触れても同じ場所をもう一度タップし直せば戻せるし、
+    // 何回かに分けて別々の区間を記録できる。
+    // opts.rows: [{ startHour, hours }, ...]  periods: [{from:"HH:MM", to:"HH:MM"}, ...]
+    function makeTimelineField(labelText, periods, onChange, opts) {
+      const SEGMENT_MINUTES = 30;
+      const rows = opts.rows;
+
+      // 各行のマスを、実際の時計上の分(0-1439, 深夜0時基準)に対応付けておく。
+      // 行をこの順で連結した配列が「表示順=時系列」になるように、
+      // 隣り合う行は必ず連続した時間帯になるよう呼び出し側で指定すること。
+      const segMeta = [];
+      rows.forEach(row => {
+        const segCount = (row.hours * 60) / SEGMENT_MINUTES;
+        for (let i = 0; i < segCount; i++) {
+          segMeta.push({ absMin: (row.startHour * 60 + i * SEGMENT_MINUTES) % 1440 });
+        }
+      });
+      const TOTAL = segMeta.length;
+
+      const wrap = document.createElement("div");
+      wrap.className = "field";
+
+      const label = document.createElement("div");
+      label.className = "field-label";
+      label.textContent = labelText;
+      wrap.appendChild(label);
+
+      const valueDisplay = document.createElement("div");
+      valueDisplay.className = "range-time-value";
+      wrap.appendChild(valueDisplay);
+
+      function formatMin(min) {
+        return pad2(Math.floor(min / 60)) + ":" + pad2(min % 60);
+      }
+
+      function findIndexForAbsMin(min) {
+        return segMeta.findIndex(m => m.absMin === min);
+      }
+
+      const selected = new Array(TOTAL).fill(false);
+      (periods || []).forEach(p => {
+        let cur = hhmmToMinutes(p.from);
+        const end = hhmmToMinutes(p.to);
+        for (let guard = 0; guard < TOTAL && cur !== end; guard++) {
+          const idx = findIndexForAbsMin(cur % 1440);
+          if (idx >= 0) selected[idx] = true;
+          cur = (cur + SEGMENT_MINUTES) % 1440;
+        }
+      });
+
+      function computePeriods() {
+        const result = [];
+        let start = null;
+        for (let i = 0; i <= TOTAL; i++) {
+          if (i < TOTAL && selected[i]) {
+            if (start == null) start = i;
+          } else if (start != null) {
+            const toMin = (segMeta[i - 1].absMin + SEGMENT_MINUTES) % 1440;
+            result.push({ from: formatMin(segMeta[start].absMin), to: formatMin(toMin) });
+            start = null;
+          }
+        }
+        return result;
+      }
+
+      const segEls = new Array(TOTAL);
+
+      function renderCells() {
+        segEls.forEach((el, i) => el.classList.toggle("selected", selected[i]));
+        const p = computePeriods();
+        valueDisplay.textContent = p.length
+          ? p.map(x => x.from + " 〜 " + x.to).join(" , ")
+          : "未設定(なぞって設定)";
+      }
+
+      function buildRow(row, baseIndex) {
+        const segCount = (row.hours * 60) / SEGMENT_MINUTES;
+        const track = document.createElement("div");
+        track.className = "away-track";
+
+        for (let i = 0; i < segCount; i++) {
+          const seg = document.createElement("div");
+          seg.className = "away-seg";
+          track.appendChild(seg);
+          segEls[baseIndex + i] = seg;
+        }
+
+        let paintValue = null; // このストロークで塗る値(true=選択/false=解除)
+        let lastIndex = null;
+
+        function indexFromClientX(clientX) {
+          const rect = track.getBoundingClientRect();
+          const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+          return Math.min(segCount - 1, Math.floor(ratio * segCount));
+        }
+
+        function paintRangeTo(idx) {
+          const lo = Math.min(lastIndex, idx);
+          const hi = Math.max(lastIndex, idx);
+          for (let i = lo; i <= hi; i++) {
+            selected[baseIndex + i] = paintValue;
+          }
+          lastIndex = idx;
+        }
+
+        track.addEventListener("pointerdown", e => {
+          e.preventDefault();
+          track.setPointerCapture(e.pointerId);
+          const idx = indexFromClientX(e.clientX);
+          paintValue = !selected[baseIndex + idx];
+          lastIndex = idx;
+          selected[baseIndex + idx] = paintValue;
+          renderCells();
+        });
+
+        track.addEventListener("pointermove", e => {
+          if (paintValue == null) return;
+          const idx = indexFromClientX(e.clientX);
+          if (idx === lastIndex) return;
+          paintRangeTo(idx);
+          renderCells();
+        });
+
+        function finishStroke() {
+          if (paintValue == null) return;
+          paintValue = null;
+          lastIndex = null;
+          onChange(computePeriods());
+        }
+        track.addEventListener("pointerup", finishStroke);
+        track.addEventListener("pointercancel", finishStroke);
+
+        return track;
+      }
+
+      let baseIndex = 0;
+      rows.forEach(row => {
+        const segCount = (row.hours * 60) / SEGMENT_MINUTES;
+        wrap.appendChild(buildRow(row, baseIndex));
+
+        const scale = document.createElement("div");
+        scale.className = "range-time-scale";
+        const tickCount = 3; // 開始・中間・終了の3点(1時間単位、"6:00"ではなく"6"で表示)
+        const ticks = [];
+        for (let t = 0; t < tickCount; t++) {
+          const rawHour = row.startHour + (row.hours * t) / (tickCount - 1);
+          const displayHour = rawHour === 24 ? 24 : ((rawHour % 24) + 24) % 24;
+          ticks.push("<span>" + displayHour + "</span>");
+        }
+        scale.innerHTML = ticks.join("");
+        wrap.appendChild(scale);
+
+        baseIndex += segCount;
+      });
+
+      const clearBtn = document.createElement("button");
+      clearBtn.type = "button";
+      clearBtn.className = "clear-btn";
+      clearBtn.textContent = "×";
+      clearBtn.style.marginTop = "8px";
+      clearBtn.setAttribute("aria-label", "クリア");
+      clearBtn.onclick = () => {
+        selected.fill(false);
+        renderCells();
+        onChange([]);
+      };
+      wrap.appendChild(clearBtn);
+
+      renderCells();
+      return wrap;
+    }
+
+    function hhmmToMinutes(v) {
+      const [h, m] = v.split(":").map(Number);
+      return h * 60 + m;
+    }
+
+    // ---- 夜の記録 ----
+    let nightDraft = {};
+    let nightDateKey = "";
+
+    // now を渡すと(初回表示時)「今」を寝入り時刻の初期値にする。
+    // 日付を後から手動で変更したときは now を渡さない(別日に「今」は無意味なため)。
+    function loadNightDraftFor(dateKeyStr, now) {
+      const records = loadRecords();
+      nightDraft = Object.assign({}, records[dateKeyStr] || {});
+      if (!nightDraft.bedtime && now) {
+        nightDraft.bedtime = now.toISOString();
+      }
+    }
+
+    function openNightScreen() {
+      const now = new Date();
+      nightDateKey = computeNightWakeDateKey(now);
+      loadNightDraftFor(nightDateKey, now);
+
+      const dateInput = document.getElementById("night-date-input");
+      dateInput.value = nightDateKey;
+      document.getElementById("night-date-weekday").textContent = "(" + weekdayOf(nightDateKey) + ")";
+      dateInput.onchange = () => {
+        if (!dateInput.value) { dateInput.value = nightDateKey; return; }
+        nightDateKey = dateInput.value;
+        loadNightDraftFor(nightDateKey, null);
+        document.getElementById("night-date-weekday").textContent = "(" + weekdayOf(nightDateKey) + ")";
+        renderNightForm();
+      };
+
+      renderNightForm();
+      showScreen("screen-night");
+    }
+
+    // 夜は「忘れがちなもの」だけに絞る(寝入り・飲酒)。カフェインは別メニュー、
+    // 就寝場所・外出/帰宅時刻・起床時刻は翌朝まとめて記録する。
+    function renderNightForm() {
+      const root = document.getElementById("night-fields");
+      root.innerHTML = "";
+
+      const bedtimeStr = nightDraft.bedtime ? timeStr(new Date(nightDraft.bedtime)) : null;
+      root.appendChild(makeRangeTimeField(
+        "寝入り時刻", bedtimeStr,
+        v => { nightDraft.bedtime = v ? combineDateAndTime(nightDateKey, v) : null; },
+        { startHour: 20, totalSteps: 16, stepMinutes: 30 }
+      ));
+
+      root.appendChild(makeSegField(
+        "飲酒",
+        [
+          { label: "なし", value: "none" },
+          { label: "ほろ酔い", value: "tipsy" },
+          { label: "しっかり酔い", value: "drunk" },
+          { label: "酩酊", value: "wasted" },
+        ],
+        nightDraft.alcohol_level,
+        v => { nightDraft.alcohol_level = v; renderNightForm(); }
+      ));
+
+      if (nightDraft.alcohol_level && nightDraft.alcohol_level !== "none") {
+        root.appendChild(makeRangeTimeField(
+          "最後に飲んだ時刻", nightDraft.alcohol_last_at,
+          v => { nightDraft.alcohol_last_at = v; },
+          { startHour: 20, totalSteps: 16, stepMinutes: 30 }
+        ));
+      } else {
+        nightDraft.alcohol_last_at = null;
+      }
+    }
+
+    function saveNight() {
+      const records = loadRecords();
+      records[nightDateKey] = nightDraft;
+      saveRecords(records);
+      showScreen("screen-home");
+    }
+
+    // ---- 朝の記録 ----
+    let morningDraft = {};
+    let morningDateKey = "";
+
+    // now を渡すと(初回表示時)「今」を起床時刻の初期値にする。
+    // 日付を後から手動で変更したときは now を渡さない(別日に「今」は無意味なため)。
+    function loadMorningDraftFor(dateKeyStr, now) {
+      const records = loadRecords();
+      morningDraft = Object.assign({}, records[dateKeyStr] || {});
+      if (!morningDraft.wake_at && now) {
+        morningDraft.wake_at = now.toISOString();
+      }
+    }
+
+    function openMorningScreen() {
+      const now = new Date();
+      morningDateKey = dateKey(now);
+      loadMorningDraftFor(morningDateKey, now);
+
+      const dateInput = document.getElementById("morning-date-input");
+      dateInput.value = morningDateKey;
+      document.getElementById("morning-date-weekday").textContent = "(" + weekdayOf(morningDateKey) + ")";
+      dateInput.onchange = () => {
+        if (!dateInput.value) { dateInput.value = morningDateKey; return; }
+        morningDateKey = dateInput.value;
+        loadMorningDraftFor(morningDateKey, null);
+        document.getElementById("morning-date-weekday").textContent = "(" + weekdayOf(morningDateKey) + ")";
+        renderMorningForm();
+      };
+
+      renderMorningForm();
+      showScreen("screen-morning");
+    }
+
+    // 前夜〜今朝にかけての「時刻を覚えていれば十分」な項目は
+    // 起床時にまとめて記録する(就寝場所・外出していた時間)。
+    function renderMorningForm() {
+      const root = document.getElementById("morning-fields");
+      root.innerHTML = "";
+
+      const wakeStr = morningDraft.wake_at ? timeStr(new Date(morningDraft.wake_at)) : null;
+      root.appendChild(makeRangeTimeField(
+        "起床時刻", wakeStr,
+        v => { morningDraft.wake_at = v ? combineMorningDateAndTime(morningDateKey, v) : null; },
+        { startHour: 5, totalSteps: 12, stepMinutes: 30 }
+      ));
+
+      root.appendChild(makeRatingField(
+        "すっきり度 (1:だるい → 5:すっきり)", morningDraft.refreshed,
+        v => { morningDraft.refreshed = v; renderMorningForm(); }
+      ));
+
+      root.appendChild(makeSegField(
+        "就寝場所",
+        [{ label: "自宅", value: "home" }, { label: "彼女の家", value: "partner" }, { label: "その他", value: "other" }],
+        morningDraft.sleep_place,
+        v => { morningDraft.sleep_place = v; renderMorningForm(); }
+      ));
+
+      root.appendChild(makeTimelineField(
+        "外出していた時間(前日、複数回もOK)", morningDraft.away_periods || [],
+        periods => { morningDraft.away_periods = periods; },
+        { rows: [{ startHour: 0, hours: 12 }, { startHour: 12, hours: 12 }] }
+      ));
+
+      root.appendChild(makeTimelineField(
+        "中途覚醒していた時間(前夜22時〜翌10時、複数回もOK)", morningDraft.awake_periods || [],
+        periods => { morningDraft.awake_periods = periods; },
+        { rows: [{ startHour: 22, hours: 12 }] }
+      ));
+    }
+
+    function saveMorning() {
+      const records = loadRecords();
+      records[morningDateKey] = morningDraft;
+      saveRecords(records);
+      showScreen("screen-home");
+    }
+
+    // ---- カフェイン(スタンプカード形式、いつでも追記できる別メニュー) ----
+    let caffeineDateKey = "";
+
+    // カフェインは夜の記録と違い「飲んだ瞬間」に記録することが多いので、
+    // 寝る前の時刻を翌日扱いにする夜用のロジックは使わず、単純に今日の日付を初期値にする。
+    function openCaffeineScreen() {
+      caffeineDateKey = dateKey(new Date());
+
+      const dateInput = document.getElementById("caffeine-date-input");
+      dateInput.value = caffeineDateKey;
+      document.getElementById("caffeine-date-weekday").textContent = "(" + weekdayOf(caffeineDateKey) + ")";
+      dateInput.onchange = () => {
+        if (!dateInput.value) { dateInput.value = caffeineDateKey; return; }
+        caffeineDateKey = dateInput.value;
+        document.getElementById("caffeine-date-weekday").textContent = "(" + weekdayOf(caffeineDateKey) + ")";
+        renderCaffeineGrid();
+      };
+
+      renderCaffeineGrid();
+      showScreen("screen-caffeine");
+    }
+
+    // カフェインは就寝前の要因として、その時刻が属する「起床予定日」の
+    // レコードに保存する(寝入り・飲酒と同じ考え方: 正午以降は翌日扱い)。
+    // そのため記録対象日の1日の中でも、午前の時間帯と午後の時間帯とで
+    // 実際に保存されるレコードの日付が変わる。
+    function caffeineStorageKeyFor(targetDateKeyStr, hour) {
+      const [y, mo, d] = targetDateKeyStr.split("-").map(Number);
+      const dt = new Date(y, mo - 1, d);
+      if (hour >= 12) dt.setDate(dt.getDate() + 1);
+      return dateKey(dt);
+    }
+
+    function renderCaffeineGrid() {
+      const records = loadRecords();
+
+      const grid = document.getElementById("caffeine-grid");
+      grid.innerHTML = "";
+      for (let h = 0; h < 24; h++) {
+        const storageKey = caffeineStorageKeyFor(caffeineDateKey, h);
+        const hours = (records[storageKey] || {}).caffeine_hours || [];
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "stamp-btn" + (hours.includes(h) ? " selected" : "");
+        btn.textContent = h + "時";
+        btn.onclick = () => toggleCaffeineHour(h);
+        grid.appendChild(btn);
+      }
+    }
+
+    function toggleCaffeineHour(h) {
+      const storageKey = caffeineStorageKeyFor(caffeineDateKey, h);
+      const records = loadRecords();
+      const rec = Object.assign({}, records[storageKey] || {});
+      const hours = (rec.caffeine_hours || []).slice();
+      const idx = hours.indexOf(h);
+      const added = idx < 0;
+      if (added) hours.push(h); else hours.splice(idx, 1);
+      hours.sort((a, b) => a - b);
+      rec.caffeine_hours = hours;
+      records[storageKey] = rec;
+      saveRecords(records);
+      renderCaffeineGrid();
+      showToast(h + "時を" + (added ? "保存しました" : "取り消しました"));
+    }
+
+    // ---- 一覧・詳細 ----
+    function sleepDurationText(rec) {
+      if (!rec.bedtime || !rec.wake_at) return "-";
+      const ms = new Date(rec.wake_at) - new Date(rec.bedtime);
+      if (ms <= 0) return "-";
+      const totalMin = Math.round(ms / 60000);
+      const h = Math.floor(totalMin / 60);
+      const m = totalMin % 60;
+      return h + "時間" + m + "分";
+    }
+
+    function openListScreen() {
+      const records = loadRecords();
+      const dates = Object.keys(records).sort().reverse();
+      const root = document.getElementById("list-items");
+      root.innerHTML = "";
+
+      if (dates.length === 0) {
+        root.innerHTML = '<p class="empty-msg">まだ記録がありません</p>';
+      }
+
+      dates.forEach(dateStr => {
+        const rec = records[dateStr];
+        const bed = rec.bedtime ? timeStr(new Date(rec.bedtime)) : "--:--";
+        const wake = rec.wake_at ? timeStr(new Date(rec.wake_at)) : "--:--";
+        const duration = sleepDurationText(rec);
+
+        const awakeningCount = (rec.awake_periods || []).length;
+        const subParts = [];
+        if (rec.refreshed) subParts.push("すっきり度 " + rec.refreshed + " / 5");
+        if (awakeningCount > 0) subParts.push("中途覚醒 " + awakeningCount + "回");
+
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = "list-item";
+        item.innerHTML =
+          '<span class="list-date">' + dateStr + "</span>" +
+          '<span class="list-summary">就寝 ' + bed + " → 起床 " + wake + " (" + duration + ")</span>" +
+          '<span class="list-refreshed">' + subParts.join(" / ") + "</span>";
+        item.onclick = () => openDetailScreen(dateStr);
+        root.appendChild(item);
+      });
+
+      showScreen("screen-list");
+    }
+
+    // ---- グラフ(1週間/1ヶ月/3ヶ月で切り替え) ----
+    const ALCOHOL_CHART_COLORS = { none: "#c3c2b7", tipsy: "#fab219", drunk: "#ec835a", wasted: "#d03b3b" };
+
+    let chartRangeDays = 7;
+
+    function openChartScreen() {
+      document.querySelectorAll("#chart-range-group .seg-btn").forEach(btn => {
+        btn.classList.toggle("selected", Number(btn.dataset.range) === chartRangeDays);
+        btn.onclick = () => {
+          chartRangeDays = Number(btn.dataset.range);
+          document.querySelectorAll("#chart-range-group .seg-btn").forEach(b =>
+            b.classList.toggle("selected", b === btn)
+          );
+          renderChartPanels();
+        };
+      });
+      renderChartPanels();
+      showScreen("screen-chart");
+    }
+
+    function sleepHoursOf(rec) {
+      if (!rec || !rec.bedtime || !rec.wake_at) return null;
+      const ms = new Date(rec.wake_at) - new Date(rec.bedtime);
+      if (ms <= 0) return null;
+      return ms / 3600000;
+    }
+
+    // 就寝に近いほど影響が気になる項目なので、その日のカフェイン摂取のうち
+    // 最も遅い時間帯を代表値としてグラフに使う。
+    function lastCaffeineHourOf(rec) {
+      if (!rec || !rec.caffeine_hours || !rec.caffeine_hours.length) return null;
+      return Math.max(...rec.caffeine_hours);
+    }
+
+    function collectChartData(days) {
+      const records = loadRecords();
+      const today = new Date();
+      const data = [];
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        const key = dateKey(d);
+        data.push({ date: key, rec: records[key] || null });
+      }
+      return data;
+    }
+
+    function renderChartPanels() {
+      const root = document.getElementById("chart-panels");
+      root.innerHTML = "";
+      const data = collectChartData(chartRangeDays);
+
+      const durationPoints = data.map(d => ({ date: d.date, value: sleepHoursOf(d.rec) }));
+      const maxDuration = Math.max(10, Math.ceil(Math.max(0, ...durationPoints.map(p => p.value || 0))));
+      renderBarPanel(root, "睡眠時間", durationPoints, {
+        color: "#6c7ae0",
+        maxValue: maxDuration,
+        formatValue: v => v.toFixed(1) + "時間"
+      });
+
+      const refreshedPoints = data.map(d => ({ date: d.date, value: d.rec ? d.rec.refreshed || null : null }));
+      renderLinePanel(root, "すっきり度", refreshedPoints, {
+        color: "#eb6834",
+        minValue: 1,
+        maxValue: 5,
+        formatValue: v => v + " / 5"
+      });
+
+      renderAlcoholPanel(root, "飲酒", data);
+
+      const caffeinePoints = data.map(d => ({ date: d.date, value: lastCaffeineHourOf(d.rec) }));
+      renderBarPanel(root, "カフェイン最終摂取時刻", caffeinePoints, {
+        color: "#b98a4e",
+        maxValue: 24,
+        formatValue: v => v + "時"
+      });
+    }
+
+    // SVGは横幅を100%(preserveAspectRatio="none")で伸縮させるため、
+    // 縦方向のみ意味を持つ図形(バー・ライン)は問題ないが、円は横に潰れて
+    // 楕円になってしまう。そのため点の目印には円ではなく角丸の短い矩形を使う。
+    function makeChartSvg(n, unit, height) {
+      const svgNS = "http://www.w3.org/2000/svg";
+      const svg = document.createElementNS(svgNS, "svg");
+      svg.setAttribute("viewBox", "0 0 " + (n * unit) + " " + height);
+      svg.setAttribute("preserveAspectRatio", "none");
+      return svg;
+    }
+
+    function showChartTooltip(evtTarget, tooltip, wrap, dateStr, valueText) {
+      const wrapRect = wrap.getBoundingClientRect();
+      const targetRect = evtTarget.getBoundingClientRect();
+      tooltip.style.left = (targetRect.left + targetRect.width / 2 - wrapRect.left) + "px";
+      tooltip.style.top = (targetRect.top - wrapRect.top) + "px";
+      const [, m, d] = dateStr.split("-").map(Number);
+      tooltip.textContent = m + "/" + d + ": " + valueText;
+      tooltip.style.display = "block";
+      clearTimeout(tooltip._hideTimer);
+      tooltip._hideTimer = setTimeout(() => { tooltip.style.display = "none"; }, 2500);
+    }
+
+    function makeChartAxisLabels(data) {
+      const row = document.createElement("div");
+      row.className = "chart-axis-labels";
+      const n = data.length;
+      const count = Math.min(n, 5);
+      for (let i = 0; i < count; i++) {
+        const idx = count === 1 ? 0 : Math.round((i * (n - 1)) / (count - 1));
+        const [, m, d] = data[idx].date.split("-").map(Number);
+        const span = document.createElement("span");
+        span.textContent = m + "/" + d;
+        row.appendChild(span);
+      }
+      return row;
+    }
+
+    function renderBarPanel(container, title, points, opts) {
+      const wrap = document.createElement("div");
+      wrap.className = "chart-panel";
+      const titleEl = document.createElement("div");
+      titleEl.className = "chart-panel-title";
+      titleEl.textContent = title;
+      wrap.appendChild(titleEl);
+
+      if (!points.some(p => p.value != null)) {
+        const empty = document.createElement("div");
+        empty.className = "chart-empty";
+        empty.textContent = "まだ記録がありません";
+        wrap.appendChild(empty);
+        container.appendChild(wrap);
+        return;
+      }
+
+      const unit = 10, height = 90, bottom = 74, top = 10;
+      const plotH = bottom - top;
+      const svgWrap = document.createElement("div");
+      svgWrap.className = "chart-svg-wrap";
+      const svg = makeChartSvg(points.length, unit, height);
+
+      const svgNS = "http://www.w3.org/2000/svg";
+      const baseline = document.createElementNS(svgNS, "line");
+      baseline.setAttribute("x1", 0);
+      baseline.setAttribute("x2", points.length * unit);
+      baseline.setAttribute("y1", bottom);
+      baseline.setAttribute("y2", bottom);
+      baseline.setAttribute("stroke", "#c3c2b7");
+      baseline.setAttribute("stroke-width", 0.6);
+      svg.appendChild(baseline);
+
+      const tooltip = document.createElement("div");
+      tooltip.className = "chart-tooltip";
+
+      points.forEach((p, i) => {
+        if (p.value == null) return;
+        const barW = unit * 0.7;
+        const x = i * unit + (unit - barW) / 2;
+        const h = Math.max((p.value / opts.maxValue) * plotH, 1.5);
+        const y = bottom - h;
+        const rect = document.createElementNS(svgNS, "rect");
+        rect.setAttribute("x", x);
+        rect.setAttribute("y", y);
+        rect.setAttribute("width", barW);
+        rect.setAttribute("height", h);
+        rect.setAttribute("rx", 1.5);
+        rect.setAttribute("fill", opts.color);
+        rect.style.cursor = "pointer";
+        rect.addEventListener("click", e => showChartTooltip(e.target, tooltip, svgWrap, p.date, opts.formatValue(p.value)));
+        svg.appendChild(rect);
+      });
+
+      svgWrap.appendChild(svg);
+      svgWrap.appendChild(tooltip);
+      wrap.appendChild(svgWrap);
+      wrap.appendChild(makeChartAxisLabels(points));
+      container.appendChild(wrap);
+    }
+
+    function renderLinePanel(container, title, points, opts) {
+      const wrap = document.createElement("div");
+      wrap.className = "chart-panel";
+      const titleEl = document.createElement("div");
+      titleEl.className = "chart-panel-title";
+      titleEl.textContent = title;
+      wrap.appendChild(titleEl);
+
+      if (!points.some(p => p.value != null)) {
+        const empty = document.createElement("div");
+        empty.className = "chart-empty";
+        empty.textContent = "まだ記録がありません";
+        wrap.appendChild(empty);
+        container.appendChild(wrap);
+        return;
+      }
+
+      const unit = 10, height = 90, bottom = 74, top = 10;
+      const plotH = bottom - top;
+      const svgWrap = document.createElement("div");
+      svgWrap.className = "chart-svg-wrap";
+      const svg = makeChartSvg(points.length, unit, height);
+      const svgNS = "http://www.w3.org/2000/svg";
+
+      const baseline = document.createElementNS(svgNS, "line");
+      baseline.setAttribute("x1", 0);
+      baseline.setAttribute("x2", points.length * unit);
+      baseline.setAttribute("y1", bottom);
+      baseline.setAttribute("y2", bottom);
+      baseline.setAttribute("stroke", "#c3c2b7");
+      baseline.setAttribute("stroke-width", 0.6);
+      svg.appendChild(baseline);
+
+      function yOf(v) {
+        return bottom - ((v - opts.minValue) / (opts.maxValue - opts.minValue)) * plotH;
+      }
+
+      const coords = points.map((p, i) => p.value == null ? null : [i * unit + unit / 2, yOf(p.value)]);
+
+      let pathD = "";
+      coords.forEach(c => {
+        if (!c) { pathD += ""; return; }
+        pathD += (pathD ? " L " : "M ") + c[0] + " " + c[1];
+      });
+      if (pathD) {
+        const path = document.createElementNS(svgNS, "path");
+        path.setAttribute("d", pathD);
+        path.setAttribute("fill", "none");
+        path.setAttribute("stroke", opts.color);
+        path.setAttribute("stroke-width", 1.2);
+        path.setAttribute("stroke-linecap", "round");
+        path.setAttribute("stroke-linejoin", "round");
+        svg.appendChild(path);
+      }
+
+      const tooltip = document.createElement("div");
+      tooltip.className = "chart-tooltip";
+
+      points.forEach((p, i) => {
+        if (p.value == null) return;
+        const [cx, cy] = coords[i];
+        const markW = unit * 0.5;
+        const rect = document.createElementNS(svgNS, "rect");
+        rect.setAttribute("x", cx - markW / 2);
+        rect.setAttribute("y", cy - markW / 2);
+        rect.setAttribute("width", markW);
+        rect.setAttribute("height", markW);
+        rect.setAttribute("rx", 1.2);
+        rect.setAttribute("fill", opts.color);
+        rect.style.cursor = "pointer";
+        rect.addEventListener("click", e => showChartTooltip(e.target, tooltip, svgWrap, p.date, opts.formatValue(p.value)));
+        svg.appendChild(rect);
+      });
+
+      svgWrap.appendChild(svg);
+      svgWrap.appendChild(tooltip);
+      wrap.appendChild(svgWrap);
+      wrap.appendChild(makeChartAxisLabels(points));
+      container.appendChild(wrap);
+    }
+
+    function renderAlcoholPanel(container, title, data) {
+      const wrap = document.createElement("div");
+      wrap.className = "chart-panel";
+      const titleEl = document.createElement("div");
+      titleEl.className = "chart-panel-title";
+      titleEl.textContent = title;
+      wrap.appendChild(titleEl);
+
+      if (!data.some(d => d.rec && d.rec.alcohol_level)) {
+        const empty = document.createElement("div");
+        empty.className = "chart-empty";
+        empty.textContent = "まだ記録がありません";
+        wrap.appendChild(empty);
+        container.appendChild(wrap);
+        return;
+      }
+
+      const unit = 10, height = 26;
+      const svgWrap = document.createElement("div");
+      svgWrap.className = "chart-svg-wrap";
+      const svg = makeChartSvg(data.length, unit, height);
+      svg.style.height = "26px";
+      const svgNS = "http://www.w3.org/2000/svg";
+
+      const tooltip = document.createElement("div");
+      tooltip.className = "chart-tooltip";
+
+      data.forEach((d, i) => {
+        const level = d.rec ? d.rec.alcohol_level : null;
+        if (!level) return;
+        const barW = unit * 0.7;
+        const x = i * unit + (unit - barW) / 2;
+        const rect = document.createElementNS(svgNS, "rect");
+        rect.setAttribute("x", x);
+        rect.setAttribute("y", 6);
+        rect.setAttribute("width", barW);
+        rect.setAttribute("height", 14);
+        rect.setAttribute("rx", 1.5);
+        rect.setAttribute("fill", ALCOHOL_CHART_COLORS[level]);
+        rect.style.cursor = "pointer";
+        rect.addEventListener("click", e => showChartTooltip(e.target, tooltip, svgWrap, d.date, ALCOHOL_LABELS[level]));
+        svg.appendChild(rect);
+      });
+
+      svgWrap.appendChild(svg);
+      svgWrap.appendChild(tooltip);
+      wrap.appendChild(svgWrap);
+      wrap.appendChild(makeChartAxisLabels(data));
+
+      const legend = document.createElement("div");
+      legend.className = "chart-legend";
+      Object.keys(ALCOHOL_LABELS).forEach(key => {
+        const item = document.createElement("span");
+        item.className = "chart-legend-item";
+        item.innerHTML = '<span class="chart-legend-dot" style="background:' + ALCOHOL_CHART_COLORS[key] + '"></span>' + ALCOHOL_LABELS[key];
+        legend.appendChild(item);
+      });
+      wrap.appendChild(legend);
+
+      container.appendChild(wrap);
+    }
+
+    function formatTimeOrNone(v) {
+      if (v == null) return "未入力";
+      if (v === "none") return "なし";
+      return v;
+    }
+
+    function formatRating(v) {
+      return v == null ? "未入力" : v + " / 5";
+    }
+
+    let detailDateKey = "";
+
+    function openDetailScreen(dateStr) {
+      detailDateKey = dateStr;
+      renderDetailScreen();
+      showScreen("screen-detail");
+    }
+
+    function renderDetailScreen() {
+      const records = loadRecords();
+      const rec = records[detailDateKey] || {};
+
+      document.getElementById("detail-date-label").textContent = detailDateKey;
+
+      const root = document.getElementById("detail-fields");
+      root.innerHTML = "";
+
+      const rows = [
+        ["就寝時刻", rec.bedtime ? timeStr(new Date(rec.bedtime)) : "未入力"],
+        ["起床時刻", rec.wake_at ? timeStr(new Date(rec.wake_at)) : "未入力"],
+        ["睡眠時間", sleepDurationText(rec)],
+        ["就寝場所", rec.sleep_place ? PLACE_LABELS[rec.sleep_place] : "未入力"],
+        ["外出していた時間(前日)", (rec.away_periods && rec.away_periods.length)
+          ? rec.away_periods.map(p => p.from + "〜" + p.to).join("、")
+          : "未入力"],
+        ["中途覚醒していた時間", (rec.awake_periods && rec.awake_periods.length)
+          ? rec.awake_periods.map(p => p.from + "〜" + p.to).join("、")
+          : "未入力"],
+        ["飲酒", rec.alcohol_level ? ALCOHOL_LABELS[rec.alcohol_level] : "未入力"],
+        ["最後に飲んだ時刻", formatTimeOrNone(rec.alcohol_last_at)],
+        ["カフェイン摂取", (rec.caffeine_hours && rec.caffeine_hours.length) ? rec.caffeine_hours.map(h => h + "時").join("、") : "未入力"],
+        ["すっきり度", formatRating(rec.refreshed)],
+      ];
+
+      rows.forEach(([k, v]) => {
+        const row = document.createElement("div");
+        row.className = "detail-row";
+        row.innerHTML = '<span class="k">' + k + '</span><span class="v">' + v + "</span>";
+        root.appendChild(row);
+      });
+    }
+
+    // 時刻のみ選んだ値に、この記録の起床予定日を基準に日付を補って保存する。
+    // 「夜(正午以降)の時刻ならその前日、それ以外はその日」とみなす(寝入り用)。
+    function combineDateAndTime(dateKeyStr, timeValue) {
+      const [h, m] = timeValue.split(":").map(Number);
+      const [y, mo, d] = dateKeyStr.split("-").map(Number);
+      const dt = new Date(y, mo - 1, d, h, m, 0, 0);
+      if (h >= 12) dt.setDate(dt.getDate() - 1);
+      return dt.toISOString();
+    }
+
+    // 起床時刻は常に記録日当日の朝の時間帯なので、日付をずらさずそのまま組み立てる。
+    function combineMorningDateAndTime(dateKeyStr, timeValue) {
+      const [h, m] = timeValue.split(":").map(Number);
+      const [y, mo, d] = dateKeyStr.split("-").map(Number);
+      return new Date(y, mo - 1, d, h, m, 0, 0).toISOString();
+    }
+
+    function deleteDetailRecord() {
+      if (!confirm(detailDateKey + " の記録を削除しますか？")) return;
+      const records = loadRecords();
+      delete records[detailDateKey];
+      saveRecords(records);
+      openListScreen();
+    }
+  </script>
+
+</body>
+</html>
